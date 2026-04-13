@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculatrice de Véhicule</title>
+    
+    <!-- Manifest pour l'installation comme app -->
+    <link rel="manifest" href="./manifest.json">
+    
+    <!-- Configuration pour iPhone -->
+    <meta name="theme-color" content="#1a237e">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Calculatrice">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect fill='%231a237e' width='180' height='180' rx='40'/><text x='50%' y='50%' font-size='90' fill='white' text-anchor='middle' dy='.35em'>🚗</text></svg>">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #1a237e 0%, #283593 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.95;
+        }
+        
+        .content {
+            padding: 40px;
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 40px;
+        }
+        
+        .calculator-section {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .section-title {
+            font-size: 1.2em;
+            font-weight: 700;
+            color: #1a237e;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #1a237e;
+        }
+        
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        
+        .input-group label {
+            font-weight: 600;
+            color: #333;
+            font-size: 0.95em;
+        }
+        
+        .input-group input, .input-group select {
+            padding: 10px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 0.9em;
+            transition: all 0.3s;
+        }
+        
+        .input-group input:focus, .input-group select:focus {
+            outline: none;
+            border-color: #1a237e;
+            box-shadow: 0 0 8px rgba(26, 35, 126, 0.2);
+        }
+        
+        .vehicle-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #1a237e 0%, #283593 100%);
+            color: white;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+        
+        .results {
+            background: linear-gradient(135deg, #f5f5f5 0%, #eeeeee 100%);
+            padding: 25px;
+            border-radius: 12px;
+            margin-top: 15px;
+        }
+        
+        .result-item {
+            margin: 12px 0;
+            padding: 12px 15px;
+            background: white;
+            border-left: 4px solid #1a237e;
+            border-radius: 8px;
+        }
+        
+        .result-label {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 3px;
+        }
+        
+        .result-value {
+            color: #1a237e;
+            font-size: 1.5em;
+            font-weight: 700;
+        }
+        
+        .result-unit {
+            color: #999;
+            font-size: 0.8em;
+        }
+        
+        .chart-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 350px;
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid #1976d2;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+        
+        .info-box h3 {
+            color: #1565c0;
+            margin-bottom: 10px;
+            font-size: 0.95em;
+        }
+        
+        .info-box p {
+            color: #424242;
+            line-height: 1.5;
+            font-size: 0.85em;
+        }
+        
+        .costs-breakdown {
+            background: #fff9e6;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+        
+        .costs-breakdown h3 {
+            color: #f57f17;
+            margin-bottom: 10px;
+            font-size: 0.95em;
+        }
+        
+        .cost-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            font-size: 0.85em;
+            border-bottom: 1px solid rgba(255, 193, 7, 0.3);
+        }
+        
+        .cost-row:last-child {
+            border-bottom: none;
+            font-weight: 700;
+            color: #f57f17;
+            padding-top: 8px;
+        }
+        
+        .insurance-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .insurance-option {
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+            font-size: 0.85em;
+        }
+        
+        .insurance-option.active {
+            border-color: #1a237e;
+            background: rgba(26, 35, 126, 0.1);
+        }
+        
+        .specs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+            font-size: 0.85em;
+        }
+        
+        .spec-item {
+            background: white;
+            padding: 10px;
+            border-radius: 6px;
+        }
+        
+        .spec-label {
+            color: #666;
+            font-weight: 600;
+            font-size: 0.8em;
+        }
+        
+        .spec-value {
+            color: #1a237e;
+            font-weight: 700;
+        }
+        
+        .warning {
+            background: #fff3e0;
+            border-left: 4px solid #ff9800;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-size: 0.85em;
+            color: #e65100;
+        }
+        
+        .vehicle-type-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .type-button {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            text-align: center;
+        }
+        
+        .type-button.active {
+            border-color: #1a237e;
+            background: #1a237e;
+            color: white;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #1a237e;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @media (max-width: 1024px) {
+            .content {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .header h1 {
+                font-size: 1.8em;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .header {
+                padding: 20px;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚗 Calculatrice de Véhicule</h1>
+            <p>Calcul d'acquisition et coûts d'exploitation pour tout véhicule</p>
+        </div>
+        
+        <div class="content">
+            <div class="calculator-section">
+                <div class="section-title">🚙 Type de Véhicule</div>
+                
+                <div class="vehicle-type-selector">
+                    <button class="type-button active" onclick="selectVehicleType('car')">🚗 Voiture</button>
+                    <button class="type-button" onclick="selectVehicleType('motorcycle')">🏍️ Moto</button>
+                </div>
+                
+                <div class="section-title">🔍 Sélection du Véhicule</div>
+                
+                <div class="input-group">
+                    <label>Marque</label>
+                    <select id="brand" onchange="updateModels()">
+                        <option value="">-- Choisir une marque --</option>
+                    </select>
+                </div>
+                
+                <div class="input-group">
+                    <label>Modèle</label>
+                    <select id="model" onchange="updatePrice()">
+                        <option value="">-- Choisir un modèle --</option>
+                    </select>
+                </div>
+                
+
+                
+                <div id="vehicleInfo" style="margin-top: 15px;">
+                    <div class="info-box" id="vehicleDetails">
+                        <p style="text-align: center; color: #999;">Sélectionnez un véhicule pour voir les détails</p>
+                    </div>
+                </div>
+                
+                <div class="section-title">💰 Acquisition</div>
+                
+                <div class="input-group">
+                    <label>Revenu mensuel net (CHF)</label>
+                    <input type="number" id="monthlyIncome" value="15000" min="1000" max="500000" step="500">
+                </div>
+                
+                <div class="input-group">
+                    <label>Pourcentage du revenu à épargner (%)</label>
+                    <input type="number" id="savingsRate" value="30" min="5" max="100" step="5">
+                </div>
+                
+                <div class="input-group">
+                    <label>Apport initial disponible (CHF)</label>
+                    <input type="number" id="initialSavings" value="50000" min="0" max="500000" step="5000">
+                </div>
+                
+                <div class="input-group">
+                    <label>Rendement annuel d'épargne (%)</label>
+                    <input type="number" id="interestRate" value="1.5" min="0" max="10" step="0.1">
+                </div>
+                
+                <div class="results" id="results">
+                    <div class="result-item">
+                        <div class="result-label">Prix du véhicule</div>
+                        <div class="result-value" id="carPrice">-- <span class="result-unit">CHF</span></div>
+                    </div>
+                    
+                    <div class="result-item">
+                        <div class="result-label">Épargne mensuelle</div>
+                        <div class="result-value" id="monthlySavings">-- <span class="result-unit">CHF</span></div>
+                    </div>
+                    
+                    <div class="result-item">
+                        <div class="result-label">Temps pour acquérir</div>
+                        <div class="result-value" id="timeToAcquire">-- <span class="result-unit">mois</span></div>
+                    </div>
+                    
+                    <div class="result-item">
+                        <div class="result-label">Total épargné à l'achat</div>
+                        <div class="result-value" id="totalSaved">-- <span class="result-unit">CHF</span></div>
+                    </div>
+                </div>
+                
+                <div class="section-title">🛡️ Assurance Annuelle</div>
+                
+                <div class="input-group">
+                    <label>Type d'assurance</label>
+                    <div class="insurance-options">
+                        <div class="insurance-option active" data-type="civil" onclick="selectInsurance('civil', this)">
+                            <div><strong>Responsabilité</strong></div>
+                            <div style="font-size:0.75em; margin-top:3px;" id="civilPrice">--</div>
+                        </div>
+                        <div class="insurance-option" data-type="semi" onclick="selectInsurance('semi', this)">
+                            <div><strong>Semi-complète</strong></div>
+                            <div style="font-size:0.75em; margin-top:3px;" id="semiPrice">--</div>
+                        </div>
+                        <div class="insurance-option" data-type="complete" onclick="selectInsurance('complete', this)">
+                            <div><strong>Complète</strong></div>
+                            <div style="font-size:0.75em; margin-top:3px;" id="completePrice">--</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="section-title">⛽ Consommation & Entretien</div>
+                
+                <div class="input-group">
+                    <label>Km parcourus par an</label>
+                    <input type="number" id="annualKm" value="5000" min="100" max="50000" step="500">
+                </div>
+                
+                <div class="costs-breakdown">
+                    <h3>📊 Coûts Annuels Estimés</h3>
+                    <div class="cost-row">
+                        <span>Assurance</span>
+                        <span id="insuranceCost">--</span>
+                    </div>
+                    <div class="cost-row">
+                        <span>Carburant</span>
+                        <span id="fuelCost">--</span>
+                    </div>
+                    <div class="cost-row">
+                        <span>Entretien annuel</span>
+                        <span id="maintenanceCost">--</span>
+                    </div>
+                    <div class="cost-row">
+                        <span>Pneus/Pneu</span>
+                        <span id="tiresCost">--</span>
+                    </div>
+                    <div class="cost-row">
+                        <span>Parking/Stockage</span>
+                        <span id="storageCost">1'200</span>
+                    </div>
+                    <div class="cost-row">
+                        <span>💰 TOTAL ANNUEL</span>
+                        <span id="totalAnnualCost">-- CHF</span>
+                    </div>
+                </div>
+                
+                <div class="costs-breakdown" style="background: #f3e5f5; border-left-color: #9c27b0;">
+                    <h3 style="color: #6a1b9a;">📈 Coût Mensuel</h3>
+                    <div class="cost-row" style="justify-content: center; font-size: 1.1em;">
+                        <strong id="monthlyCost" style="color: #6a1b9a;">-- CHF / mois</strong>
+                    </div>
+                </div>
+                
+                <div class="warning">
+                    ⚠️ <strong>Note importante :</strong> Les prix et coûts sont des estimations basées sur les données 2026. Les tarifs réels varient selon l'assureur, le profil du conducteur, la région, et l'utilisation.
+                </div>
+            </div>
+            
+            <div class="chart-section">
+                <div class="chart-container">
+                    <canvas id="timeChart"></canvas>
+                </div>
+                
+                <div class="chart-container">
+                    <canvas id="costChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Base de données des véhicules - Base de données complète
+        const vehicleDatabase = {
+            car: {
+                'Audi': {
+                    'A1': { 2024: 28000, 2025: 29500, 2026: 31000, type: 'compact', consumption: 5.5 },
+                    'A1 Allroad': { 2024: 32000, 2025: 33500, 2026: 35000, type: 'compact', consumption: 5.8 },
+                    'A3': { 2024: 32000, 2025: 33500, 2026: 35000, type: 'compact', consumption: 6.0 },
+                    'A3 Allroad': { 2024: 35000, 2025: 36500, 2026: 38000, type: 'compact', consumption: 6.2 },
+                    'A4': { 2024: 38000, 2025: 39500, 2026: 41000, type: 'sedan', consumption: 6.5 },
+                    'A4 Allroad': { 2024: 42000, 2025: 43500, 2026: 45000, type: 'sedan', consumption: 6.8 },
+                    'A5': { 2024: 45000, 2025: 47000, 2026: 49000, type: 'sedan', consumption: 6.9 },
+                    'A6': { 2024: 48000, 2025: 50000, 2026: 52000, type: 'sedan', consumption: 7.2 },
+                    'A7': { 2024: 65000, 2025: 68000, 2026: 71000, type: 'sedan', consumption: 7.8 },
+                    'A8': { 2024: 85000, 2025: 88000, 2026: 91000, type: 'sedan', consumption: 8.5 },
+                    'Q2': { 2024: 32000, 2025: 33500, 2026: 35000, type: 'compact', consumption: 6.1 },
+                    'Q3': { 2024: 38000, 2025: 39500, 2026: 41000, type: 'compact', consumption: 6.3 },
+                    'Q4 e-tron': { 2024: 42000, 2025: 44000, 2026: 46000, type: 'compact', consumption: 5.2 },
+                    'Q5': { 2024: 45000, 2025: 47000, 2026: 49000, type: 'sedan', consumption: 6.8 },
+                    'Q7': { 2024: 62000, 2025: 65000, 2026: 68000, type: 'sedan', consumption: 7.9 },
+                    'Q8': { 2024: 75000, 2025: 78000, 2026: 81000, type: 'sedan', consumption: 8.2 },
+                    'RS3': { 2024: 65000, 2025: 68000, 2026: 71000, type: 'sport', consumption: 8.5 },
+                    'RS4': { 2024: 80000, 2025: 83000, 2026: 86000, type: 'sport', consumption: 9.0 },
+                    'RS5': { 2024: 85000, 2025: 88000, 2026: 91000, type: 'sport', consumption: 9.2 },
+                    'RS6': { 2024: 115000, 2025: 120000, 2026: 125000, type: 'sport', consumption: 10.5 },
+                    'RS7': { 2024: 140000, 2025: 145000, 2026: 151000, type: 'sport', consumption: 11.0 },
+                    'RS Q8': { 2024: 135000, 2025: 140000, 2026: 146000, type: 'sport', consumption: 11.2 },
+                },
+                'BMW': {
+                    '116i': { 2024: 26000, 2025: 27500, 2026: 29000, type: 'compact', consumption: 5.2 },
+                    '118i': { 2024: 27000, 2025: 28500, 2026: 30000, type: 'compact', consumption: 5.3 },
+                    '120i': { 2024: 29000, 2025: 30500, 2026: 32000, type: 'compact', consumption: 5.5 },
+                    '220i': { 2024: 31000, 2025: 32500, 2026: 34000, type: 'compact', consumption: 5.7 },
+                    '320i': { 2024: 37000, 2025: 38500, 2026: 40000, type: 'sedan', consumption: 6.4 },
+                    '330i': { 2024: 45000, 2025: 47000, 2026: 49000, type: 'sedan', consumption: 7.0 },
+                    '340i': { 2024: 52000, 2025: 54000, 2026: 56000, type: 'sedan', consumption: 7.5 },
+                    '520i': { 2024: 48000, 2025: 50000, 2026: 52000, type: 'sedan', consumption: 6.9 },
+                    '530i': { 2024: 58000, 2025: 60000, 2026: 62500, type: 'sedan', consumption: 7.6 },
+                    '740i': { 2024: 95000, 2025: 99000, 2026: 103000, type: 'sedan', consumption: 8.8 },
+                    'Z4': { 2024: 62000, 2025: 65000, 2026: 68000, type: 'sport', consumption: 7.3 },
+                    'X1': { 2024: 38000, 2025: 39500, 2026: 41000, type: 'compact', consumption: 6.2 },
+                    'X2': { 2024: 42000, 2025: 44000, 2026: 46000, type: 'compact', consumption: 6.4 },
+                    'X3': { 2024: 50000, 2025: 52000, 2026: 54000, type: 'sedan', consumption: 7.1 },
+                    'X4': { 2024: 58000, 2025: 60000, 2026: 62500, type: 'sedan', consumption: 7.4 },
+                    'X5': { 2024: 75000, 2025: 78000, 2026: 81000, type: 'sedan', consumption: 8.5 },
+                    'X6': { 2024: 82000, 2025: 85000, 2026: 88000, type: 'sedan', consumption: 8.8 },
+                    'X7': { 2024: 105000, 2025: 110000, 2026: 115000, type: 'sedan', consumption: 9.8 },
+                    'M440i': { 2024: 75000, 2025: 78000, 2026: 81000, type: 'sport', consumption: 8.8 },
+                    'M550i': { 2024: 95000, 2025: 98000, 2026: 101000, type: 'sport', consumption: 9.5 },
+                    'M3': { 2024: 105000, 2025: 110000, 2026: 115000, type: 'sport', consumption: 10.2 },
+                    'M4': { 2024: 115000, 2025: 120000, 2026: 125000, type: 'sport', consumption: 10.8 },
+                    'M5': { 2024: 135000, 2025: 140000, 2026: 145000, type: 'sport', consumption: 11.5 },
+                    'M8': { 2024: 155000, 2025: 162000, 2026: 169000, type: 'sport', consumption: 12.2 },
+                },
+                'Mercedes': {
+                    'A160': { 2024: 26000, 2025: 27500, 2026: 29000, type: 'compact', consumption: 5.2 },
+                    'A180': { 2024: 28500, 2025: 30000, 2026: 31500, type: 'compact', consumption: 5.4 },
+                    'A200': { 2024: 31000, 2025: 32500, 2026: 34000, type: 'compact', consumption: 5.6 },
+                    'B180': { 2024: 30000, 2025: 31500, 2026: 33000, type: 'compact', consumption: 5.5 },
+                    'B200': { 2024: 33000, 2025: 34500, 2026: 36000, type: 'compact', consumption: 5.8 },
+                    'C180': { 2024: 38000, 2025: 39500, 2026: 41000, type: 'sedan', consumption: 6.3 },
+                    'C200': { 2024: 42000, 2025: 44000, 2026: 46000, type: 'sedan', consumption: 6.6 },
+                    'C300': { 2024: 48000, 2025: 50000, 2026: 52000, type: 'sedan', consumption: 7.1 },
+                    'E220': { 2024: 52000, 2025: 54000, 2026: 56000, type: 'sedan', consumption: 7.3 },
+                    'E300': { 2024: 60000, 2025: 63000, 2026: 66000, type: 'sedan', consumption: 7.8 },
+                    'E450': { 2024: 68000, 2025: 71000, 2026: 74000, type: 'sedan', consumption: 8.2 },
+                    'S500': { 2024: 110000, 2025: 115000, 2026: 120000, type: 'sedan', consumption: 9.5 },
+                    'GLA180': { 2024: 32000, 2025: 33500, 2026: 35000, type: 'compact', consumption: 6.0 },
+                    'GLA220': { 2024: 36000, 2025: 37500, 2026: 39000, type: 'compact', consumption: 6.3 },
+                    'GLB180': { 2024: 33000, 2025: 34500, 2026: 36000, type: 'compact', consumption: 6.1 },
+                    'GLC200': { 2024: 42000, 2025: 44000, 2026: 46000, type: 'sedan', consumption: 6.8 },
+                    'GLC300': { 2024: 50000, 2025: 52000, 2026: 54000, type: 'sedan', consumption: 7.2 },
+                    'GLE250': { 2024: 55000, 2025: 57500, 2026: 60000, type: 'sedan', consumption: 7.6 },
+                    'GLE450': { 2024: 70000, 2025: 73000, 2026: 76000, type: 'sedan', consumption: 8.4 },
+                    'GLS450': { 2024: 82000, 2025: 85500, 2026: 89000, type: 'sedan', consumption: 9.1 },
+                    'AMG C63': { 2024: 78000, 2025: 81000, 2026: 84000, type: 'sport', consumption: 9.0 },
+                    'AMG E63': { 2024: 115000, 2025: 120000, 2026: 125000, type: 'sport', consumption: 10.5 },
+                    'AMG G63': { 2024: 165000, 2025: 172000, 2026: 180000, type: 'sport', consumption: 12.0 },
+                    'AMG GT': { 2024: 132000, 2025: 138000, 2026: 145000, type: 'sport', consumption: 10.8 },
+                },
+                'Volkswagen': {
+                    'Polo': { 2024: 19000, 2025: 19900, 2026: 20800, type: 'compact', consumption: 4.9 },
+                    'Polo GTI': { 2024: 28000, 2025: 29500, 2026: 31000, type: 'sport', consumption: 6.5 },
+                    'Golf': { 2024: 24000, 2025: 25000, 2026: 26000, type: 'compact', consumption: 5.6 },
+                    'Golf GTE': { 2024: 36000, 2025: 37500, 2026: 39000, type: 'compact', consumption: 4.8 },
+                    'Golf GTI': { 2024: 35000, 2025: 36500, 2026: 38000, type: 'sport', consumption: 7.2 },
+                    'Golf R': { 2024: 45000, 2025: 47000, 2026: 49000, type: 'sport', consumption: 8.0 },
+                    'Passat': { 2024: 31000, 2025: 32300, 2026: 33600, type: 'sedan', consumption: 6.4 },
+                    'Passat Variant': { 2024: 33000, 2025: 34500, 2026: 36000, type: 'sedan', consumption: 6.6 },
+                    'Arteon': { 2024: 38000, 2025: 39500, 2026: 41000, type: 'sedan', consumption: 6.9 },
+                    'T-Cross': { 2024: 22000, 2025: 23000, 2026: 24000, type: 'compact', consumption: 5.2 },
+                    'T-Roc': { 2024: 26000, 2025: 27200, 2026: 28400, type: 'compact', consumption: 5.8 },
+                    'Tiguan': { 2024: 30000, 2025: 31500, 2026: 33000, type: 'sedan', consumption: 6.7 },
+                    'Tiguan Allspace': { 2024: 33000, 2025: 34500, 2026: 36000, type: 'sedan', consumption: 6.9 },
+                    'Touareg': { 2024: 58000, 2025: 60500, 2026: 63000, type: 'sedan', consumption: 8.2 },
+                    'ID.3': { 2024: 32000, 2025: 33500, 2026: 35000, type: 'compact', consumption: 4.2 },
+                    'ID.4': { 2024: 38000, 2025: 39500, 2026: 41000, type: 'compact', consumption: 4.6 },
+                    'ID.5': { 2024: 42000, 2025: 44000, 2026: 46000, type: 'compact', consumption: 4.8 },
+                },
+                'Toyota': {
+                    'Yaris': { 2024: 18000, 2025: 18800, 2026: 19600, type: 'compact', consumption: 4.5 },
+                    'Yaris GR': { 2024: 34000, 2025: 35500, 2026: 37000, type: 'sport', consumption: 7.0 },
+                    'Corolla': { 2024: 23000, 2025: 24000, 2026: 25000, type: 'sedan', consumption: 5.2 },
+                    'Corolla Hybrid': { 2024: 28000, 2025: 29500, 2026: 31000, type: 'sedan', consumption: 4.2 },
+                    'Camry': { 2024: 32000, 2025: 33500, 2026: 35000, type: 'sedan', consumption: 6.5 },
+                    'Camry Hybrid': { 2024: 37000, 2025: 38500, 2026: 40000, type: 'sedan', consumption: 4.8 },
+                    'GR Supra': { 2024: 58000, 2025: 60000, 2026: 62500, type: 'sport', consumption: 7.8 },
+                    'BZ4X': { 2024: 42000, 2025: 44000, 2026: 46000, type: 'compact', consumption: 4.3 },
+                    'RAV4': { 2024: 32000, 2025: 33500, 2026: 35000, type: 'sedan', consumption: 6.8 },
+                    'RAV4 Hybrid': { 2024: 38000, 2025: 39500, 2026: 41000, type: 'sedan', consumption: 5.2 },
+                    'Highlander': { 2024: 45000, 2025: 47000, 2026: 49000, type: 'sedan', consumption: 8.0 },
+                    'Land Cruiser': { 2024: 62000, 2025: 65000, 2026: 68000, type: 'sedan', consumption: 9.5 },
+                },
+                'Honda': {
+                    'Jazz': { 2024: 19500, 2025: 20400, 2026: 21300, type: 'compact', consumption: 4.8 },
+                    'Civic': { 2024: 25000, 2025: 26000, 2026: 27000, type: 'sedan', consumption: 5.9 },
+                    'Civic Type-R': { 2024: 45000, 2025: 47000, 2026: 49000, type: 'sport', consumption: 8.2 },
+                    'Accord': { 2024: 32000, 2025: 33500, 2026: 35000, type: 'sedan', consumption: 6.8 },
+                    'Insight': { 2024: 30000, 2025: 31500, 2026: 33000, type: 'sedan', consumption: 4.4 },
+                    'e:Ny1': { 2024: 38000, 2025: 39500, 2026: 41000, type: 'compact', consumption: 4.2 },
+                    'CR-V': { 2024: 32000, 2025: 33500, 2026: 35000, type: 'sedan', consumption: 7.0 },
+                    'HR-V': { 2024: 25000, 2025: 26000, 2026: 27000, type: 'compact', consumption: 6.2 },
+                    'Pilot': { 2024: 42000, 2025: 44000, 2026: 46000, type: 'sedan', consumption: 8.2 },
+                },
+                'Porsche': {
+                    '911': { 2024: 120000, 2025: 125000, 2026: 130000, type: 'sport', consumption: 8.5 },
+                    '911 Turbo': { 2024: 195000, 2025: 205000, 2026: 215000, type: 'sport', consumption: 10.5 },
+                    '911 GT3': { 2024: 185000, 2025: 195000, 2026: 205000, type: 'sport', consumption: 11.0 },
+                    'Cayman': { 2024: 85000, 2025: 88000, 2026: 91000, type: 'sport', consumption: 7.8 },
+                    'Cayman GT4': { 2024: 105000, 2025: 110000, 2026: 115000, type: 'sport', consumption: 8.5 },
+                    'Boxster': { 2024: 78000, 2025: 81000, 2026: 84000, type: 'sport', consumption: 7.5 },
+                    'Panamera': { 2024: 95000, 2025: 99000, 2026: 103000, type: 'sedan', consumption: 8.8 },
+                    'Panamera Turbo': { 2024: 145000, 2025: 152000, 2026: 159000, type: 'sport', consumption: 10.2 },
+                    'Cayenne': { 2024: 95000, 2025: 98000, 2026: 102000, type: 'sport', consumption: 9.2 },
+                    'Cayenne Turbo': { 2024: 155000, 2025: 162000, 2026: 169000, type: 'sport', consumption: 10.8 },
+                    'Macan': { 2024: 68000, 2025: 71000, 2026: 74000, type: 'sedan', consumption: 8.0 },
+                    'Taycan': { 2024: 88000, 2025: 92000, 2026: 96000, type: 'sport', consumption: 4.5 },
+                },
+                'Ferrari': {
+                    'Roma': { 2024: 220000, 2025: 230000, 2026: 240000, type: 'sport', consumption: 9.5 },
+                    'SF90 Stradale': { 2024: 470000, 2025: 488000, 2026: 507500, type: 'sport', consumption: 6.1 },
+                    'SF90 Spider': { 2024: 475000, 2025: 495000, 2026: 515000, type: 'sport', consumption: 6.1 },
+                    'F8 Tributo': { 2024: 280000, 2025: 290000, 2026: 302000, type: 'sport', consumption: 8.0 },
+                    'F8 Spider': { 2024: 290000, 2025: 300000, 2026: 312000, type: 'sport', consumption: 8.0 },
+                    '812 GTS': { 2024: 320000, 2025: 335000, 2026: 350000, type: 'sport', consumption: 9.2 },
+                    'Portofino M': { 2024: 240000, 2025: 252000, 2026: 265000, type: 'sport', consumption: 10.2 },
+                    '488 Pista': { 2024: 340000, 2025: 357000, 2026: 375000, type: 'sport', consumption: 11.0 },
+                    'LaFerrari': { 2024: 1500000, 2025: 1550000, 2026: 1600000, type: 'sport', consumption: 9.0 },
+                    'Monza SP1': { 2024: 950000, 2025: 1000000, 2026: 1050000, type: 'sport', consumption: 12.0 },
+                },
+                'Lamborghini': {
+                    'Huracán': { 2024: 240000, 2025: 250000, 2026: 260000, type: 'sport', consumption: 11.0 },
+                    'Huracán Sterrato': { 2024: 265000, 2025: 278000, 2026: 292000, type: 'sport', consumption: 11.5 },
+                    'Revuelto': { 2024: 550000, 2025: 575000, 2026: 600000, type: 'sport', consumption: 6.5 },
+                    'Urus': { 2024: 220000, 2025: 228000, 2026: 237000, type: 'sport', consumption: 10.2 },
+                    'Urus S': { 2024: 235000, 2025: 244000, 2026: 254000, type: 'sport', consumption: 10.4 },
+                    'Revuelto Roadster': { 2024: 610000, 2025: 637000, 2026: 665000, type: 'sport', consumption: 6.8 },
+                },
+                'Maserati': {
+                    'Ghibli': { 2024: 85000, 2025: 88000, 2026: 91000, type: 'sedan', consumption: 8.5 },
+                    'Levante': { 2024: 95000, 2025: 98000, 2026: 102000, type: 'sedan', consumption: 9.2 },
+                    'MC20': { 2024: 305000, 2025: 320000, 2026: 336000, type: 'sport', consumption: 9.8 },
+                    'Quattroporte': { 2024: 115000, 2025: 120000, 2026: 125000, type: 'sedan', consumption: 9.5 },
+                },
+                'McLaren': {
+                    '570S': { 2024: 210000, 2025: 220000, 2026: 230000, type: 'sport', consumption: 10.5 },
+                    '720S': { 2024: 290000, 2025: 305000, 2026: 320000, type: 'sport', consumption: 11.0 },
+                    'Artura': { 2024: 340000, 2025: 357000, 2026: 375000, type: 'sport', consumption: 6.8 },
+                    'GT': { 2024: 230000, 2025: 242000, 2026: 255000, type: 'sport', consumption: 10.2 },
+                    'P1': { 2024: 950000, 2025: 995000, 2026: 1045000, type: 'sport', consumption: 8.5 },
+                },
+                'Bugatti': {
+                    'Chiron': { 2024: 2600000, 2025: 2730000, 2026: 2860000, type: 'sport', consumption: 18.0 },
+                    'Veyron': { 2024: 1700000, 2025: 1780000, 2026: 1860000, type: 'sport', consumption: 16.5 },
+                },
+                'Rolls-Royce': {
+                    'Phantom': { 2024: 420000, 2025: 441000, 2026: 463000, type: 'sedan', consumption: 12.5 },
+                    'Ghost': { 2024: 340000, 2025: 357000, 2026: 375000, type: 'sedan', consumption: 11.0 },
+                    'Wraith': { 2024: 360000, 2025: 378000, 2026: 397000, type: 'sedan', consumption: 11.5 },
+                    'Dawn': { 2024: 395000, 2025: 414000, 2026: 434000, type: 'sedan', consumption: 11.8 },
+                },
+                'Bentley': {
+                    'Continental GT': { 2024: 285000, 2025: 299000, 2026: 314000, type: 'sport', consumption: 11.0 },
+                    'Flying Spur': { 2024: 245000, 2025: 257000, 2026: 270000, type: 'sedan', consumption: 10.5 },
+                    'Bentayga': { 2024: 180000, 2025: 189000, 2026: 199000, type: 'sport', consumption: 10.8 },
+                },
+                'Aston Martin': {
+                    'DB11': { 2024: 280000, 2025: 294000, 2026: 309000, type: 'sport', consumption: 10.2 },
+                    'Vantage': { 2024: 185000, 2025: 194000, 2026: 204000, type: 'sport', consumption: 9.8 },
+                    'DBS': { 2024: 365000, 2025: 383000, 2026: 402000, type: 'sport', consumption: 11.5 },
+                    'DBX': { 2024: 175000, 2025: 184000, 2026: 193000, type: 'sport', consumption: 9.5 },
+                },
+            },
+            motorcycle: {
+                'Yamaha': {
+                    'MT-07': { 2024: 7300, 2025: 7600, 2026: 7900, type: 'standard', consumption: 4.5 },
+                    'MT-09': { 2024: 9500, 2025: 9900, 2026: 10300, type: 'standard', consumption: 5.0 },
+                    'MT-10': { 2024: 12000, 2025: 12500, 2026: 13000, type: 'standard', consumption: 5.5 },
+                    'YZF-R3': { 2024: 5200, 2025: 5450, 2026: 5700, type: 'sport', consumption: 4.2 },
+                    'YZF-R6': { 2024: 7800, 2025: 8150, 2026: 8500, type: 'sport', consumption: 4.9 },
+                    'YZF-R7': { 2024: 9200, 2025: 9600, 2026: 10000, type: 'sport', consumption: 5.2 },
+                    'YZF-R1': { 2024: 19500, 2025: 20300, 2026: 21100, type: 'sport', consumption: 6.2 },
+                    'TRACER 700': { 2024: 8200, 2025: 8550, 2026: 8900, type: 'standard', consumption: 4.8 },
+                    'XSR900': { 2024: 10500, 2025: 11000, 2026: 11500, type: 'standard', consumption: 5.2 },
+                },
+                'Honda': {
+                    'CB125R': { 2024: 1600, 2025: 1700, 2026: 1800, type: 'standard', consumption: 2.5 },
+                    'CB190R': { 2024: 2300, 2025: 2450, 2026: 2600, type: 'standard', consumption: 3.0 },
+                    'CB300R': { 2024: 3800, 2025: 4000, 2026: 4200, type: 'standard', consumption: 3.4 },
+                    'CB500F': { 2024: 6800, 2025: 7100, 2026: 7400, type: 'standard', consumption: 4.3 },
+                    'CB500X': { 2024: 7200, 2025: 7550, 2026: 7900, type: 'standard', consumption: 4.5 },
+                    'CB650R': { 2024: 8200, 2025: 8550, 2026: 8900, type: 'standard', consumption: 4.8 },
+                    'CB1000R': { 2024: 11500, 2025: 12000, 2026: 12500, type: 'standard', consumption: 5.3 },
+                    'CBR500R': { 2024: 7200, 2025: 7500, 2026: 7800, type: 'sport', consumption: 4.6 },
+                    'CBR600RR': { 2024: 10200, 2025: 10700, 2026: 11200, type: 'sport', consumption: 5.4 },
+                    'CBR1000RR': { 2024: 17500, 2025: 18200, 2026: 18900, type: 'sport', consumption: 6.0 },
+                    'NC750X': { 2024: 8800, 2025: 9200, 2026: 9600, type: 'standard', consumption: 3.5 },
+                },
+                'Kawasaki': {
+                    'Ninja 125': { 2024: 1800, 2025: 1900, 2026: 2000, type: 'sport', consumption: 2.8 },
+                    'Ninja 250': { 2024: 2800, 2025: 2950, 2026: 3100, type: 'sport', consumption: 3.2 },
+                    'Ninja 400': { 2024: 4500, 2025: 4700, 2026: 4900, type: 'sport', consumption: 3.5 },
+                    'Ninja 650': { 2024: 7000, 2025: 7300, 2026: 7600, type: 'sport', consumption: 4.4 },
+                    'Ninja 1000': { 2024: 11000, 2025: 11500, 2026: 12000, type: 'sport', consumption: 5.2 },
+                    'Ninja H2': { 2024: 28000, 2025: 29000, 2026: 30500, type: 'sport', consumption: 7.0 },
+                    'Ninja ZX-10R': { 2024: 16500, 2025: 17200, 2026: 17900, type: 'sport', consumption: 6.8 },
+                    'W800': { 2024: 8500, 2025: 8900, 2026: 9300, type: 'standard', consumption: 4.5 },
+                    'Versys 650': { 2024: 8200, 2025: 8550, 2026: 8900, type: 'standard', consumption: 4.9 },
+                },
+                'Harley-Davidson': {
+                    'Street 500': { 2024: 6500, 2025: 6750, 2026: 7000, type: 'cruiser', consumption: 4.2 },
+                    'Street 750': { 2024: 8200, 2025: 8500, 2026: 8800, type: 'cruiser', consumption: 4.8 },
+                    'Street 1200': { 2024: 9800, 2025: 10200, 2026: 10600, type: 'cruiser', consumption: 5.2 },
+                    'Iron 883': { 2024: 7500, 2025: 7800, 2026: 8100, type: 'cruiser', consumption: 4.6 },
+                    'Iron 1200': { 2024: 9200, 2025: 9600, 2026: 10000, type: 'cruiser', consumption: 5.0 },
+                    'Forty-Eight': { 2024: 9800, 2025: 10200, 2026: 10600, type: 'cruiser', consumption: 5.1 },
+                    'Fat Boy': { 2024: 12500, 2025: 13000, 2026: 13500, type: 'cruiser', consumption: 5.8 },
+                    'Road King': { 2024: 18500, 2025: 19200, 2026: 20000, type: 'cruiser', consumption: 5.9 },
+                    'Road Glide': { 2024: 28000, 2025: 29000, 2026: 30000, type: 'cruiser', consumption: 5.8 },
+                    'Street Glide': { 2024: 24500, 2025: 25500, 2026: 26500, type: 'cruiser', consumption: 5.7 },
+                    'CVO Street Glide': { 2024: 32000, 2025: 33300, 2026: 34600, type: 'cruiser', consumption: 6.0 },
+                },
+                'BMW': {
+                    'G310R': { 2024: 5000, 2025: 5200, 2026: 5400, type: 'standard', consumption: 3.2 },
+                    'G650GS': { 2024: 8500, 2025: 8900, 2026: 9300, type: 'standard', consumption: 4.2 },
+                    'F900R': { 2024: 11000, 2025: 11500, 2026: 12000, type: 'standard', consumption: 4.8 },
+                    'F900XR': { 2024: 12500, 2025: 13000, 2026: 13500, type: 'standard', consumption: 5.0 },
+                    'S1000R': { 2024: 15500, 2025: 16200, 2026: 16900, type: 'sport', consumption: 5.8 },
+                    'S1000RR': { 2024: 20000, 2025: 20800, 2026: 21600, type: 'sport', consumption: 6.5 },
+                    'M1000RR': { 2024: 25000, 2025: 26000, 2026: 27000, type: 'sport', consumption: 7.0 },
+                    'R1200GS': { 2024: 16800, 2025: 17500, 2026: 18200, type: 'standard', consumption: 5.2 },
+                    'R1250GS': { 2024: 18500, 2025: 19200, 2026: 20000, type: 'standard', consumption: 5.4 },
+                },
+                'KTM': {
+                    '125 Duke': { 2024: 2800, 2025: 2950, 2026: 3100, type: 'sport', consumption: 3.1 },
+                    '250 Duke': { 2024: 4200, 2025: 4400, 2026: 4600, type: 'sport', consumption: 3.6 },
+                    '390 Duke': { 2024: 5800, 2025: 6100, 2026: 6400, type: 'sport', consumption: 4.0 },
+                    '790 Duke': { 2024: 10500, 2025: 11000, 2026: 11500, type: 'sport', consumption: 5.0 },
+                    '890 Duke': { 2024: 12000, 2025: 12500, 2026: 13000, type: 'sport', consumption: 5.2 },
+                    'RC 390': { 2024: 6200, 2025: 6500, 2026: 6800, type: 'sport', consumption: 4.2 },
+                    '390 Adventure': { 2024: 7500, 2025: 7850, 2026: 8200, type: 'standard', consumption: 4.3 },
+                    '790 Adventure': { 2024: 11500, 2025: 12000, 2026: 12500, type: 'standard', consumption: 5.1 },
+                },
+                'Ducati': {
+                    'Monster 125': { 2024: 3800, 2025: 4000, 2026: 4200, type: 'standard', consumption: 3.3 },
+                    'Monster 250': { 2024: 4500, 2025: 4700, 2026: 4900, type: 'standard', consumption: 3.7 },
+                    'Monster 500': { 2024: 6200, 2025: 6500, 2026: 6800, type: 'standard', consumption: 4.1 },
+                    'Monster 797': { 2024: 8200, 2025: 8550, 2026: 8900, type: 'standard', consumption: 4.6 },
+                    'Panigale V2': { 2024: 14500, 2025: 15100, 2026: 15700, type: 'sport', consumption: 5.6 },
+                    'Panigale V4': { 2024: 21500, 2025: 22400, 2026: 23300, type: 'sport', consumption: 6.8 },
+                    'Streetfighter V4': { 2024: 19800, 2025: 20700, 2026: 21600, type: 'sport', consumption: 6.5 },
+                    'Multistrada 950': { 2024: 12500, 2025: 13000, 2026: 13500, type: 'standard', consumption: 5.2 },
+                },
+            }
+        };
+        
+        let currentVehicleType = 'car';
+        let selectedVehicle = null;
+        let timeChart = null;
+        let costChart = null;
+        let selectedInsurance = 'civil';
+        
+        function selectVehicleType(type) {
+            currentVehicleType = type;
+            document.querySelectorAll('.type-button').forEach(btn => btn.classList.remove('active'));
+            if (event && event.target) {
+                event.target.classList.add('active');
+            }
+            populateBrands();
+            clearVehicleSelection();
+        }
+        
+        function populateBrands() {
+            const brands = Object.keys(vehicleDatabase[currentVehicleType]).sort();
+            const brandSelect = document.getElementById('brand');
+            brandSelect.innerHTML = '<option value="">-- Choisir une marque --</option>';
+            brands.forEach(brand => {
+                const option = document.createElement('option');
+                option.value = brand;
+                option.textContent = brand;
+                brandSelect.appendChild(option);
+            });
+        }
+        
+        function updateModels() {
+            const brand = document.getElementById('brand').value;
+            const modelSelect = document.getElementById('model');
+            
+            modelSelect.innerHTML = '<option value="">-- Choisir un modèle --</option>';
+            
+            if (brand) {
+                const models = Object.keys(vehicleDatabase[currentVehicleType][brand]).sort();
+                models.forEach(model => {
+                    const option = document.createElement('option');
+                    option.value = model;
+                    option.textContent = model;
+                    modelSelect.appendChild(option);
+                });
+            }
+        }
+        
+        function updatePrice() {
+            const brand = document.getElementById('brand').value;
+            const model = document.getElementById('model').value;
+            
+            if (brand && model) {
+                const vehicleData = vehicleDatabase[currentVehicleType][brand][model];
+                selectedVehicle = vehicleData;
+                calculateResults();
+            }
+        }
+        
+        function clearVehicleSelection() {
+            document.getElementById('brand').value = '';
+            document.getElementById('model').value = '';
+            selectedVehicle = null;
+            document.getElementById('vehicleDetails').innerHTML = '<p style="text-align: center; color: #999;">Sélectionnez un véhicule pour voir les détails</p>';
+            document.getElementById('carPrice').innerHTML = '-- <span class="result-unit">CHF</span>';
+        }
+        
+        function selectInsurance(type, element) {
+            selectedInsurance = type;
+            document.querySelectorAll('.insurance-option').forEach(el => el.classList.remove('active'));
+            element.classList.add('active');
+            calculateResults();
+        }
+        
+        function getInsurancePrices() {
+            if (!selectedVehicle) return { civil: 0, semi: 0, complete: 0 };
+            
+            const type = selectedVehicle.type;
+            let baseMultiplier = 1;
+            
+            // Multiplicateurs selon le type de véhicule
+            if (type === 'sport') baseMultiplier = 1.8;
+            else if (type === 'compact') baseMultiplier = 0.7;
+            else if (type === 'sedan') baseMultiplier = 0.9;
+            else if (type === 'cruiser') baseMultiplier = 1.1;
+            else if (type === 'standard') baseMultiplier = 0.85;
+            
+            return {
+                civil: Math.round(3500 * baseMultiplier),
+                semi: Math.round(8000 * baseMultiplier),
+                complete: Math.round(12000 * baseMultiplier)
+            };
+        }
+        
+        function displayVehicleInfo() {
+            const brand = document.getElementById('brand').value;
+            const model = document.getElementById('model').value;
+            
+            if (!brand || !model || !selectedVehicle) {
+                document.getElementById('vehicleDetails').innerHTML = '<p style="text-align: center; color: #999;">Sélectionnez un véhicule pour voir les détails</p>';
+                return;
+            }
+            
+            const price = selectedVehicle[2026];
+            const type = selectedVehicle.type;
+            const consumption = selectedVehicle.consumption;
+            
+            let typeLabel = {
+                'sport': '🏁 Sportif',
+                'sedan': '🚗 Berline',
+                'compact': '🚙 Compact',
+                'cruiser': '🏍️ Cruiser',
+                'standard': '🏍️ Standard'
+            }[type] || type;
+            
+            document.getElementById('vehicleDetails').innerHTML = `
+                <div>
+                    <div style="margin-bottom: 10px;"><strong>${brand} ${model} (2026)</strong></div>
+                    <div class="specs">
+                        <div class="spec-item">
+                            <div class="spec-label">Type</div>
+                            <div class="spec-value">${typeLabel}</div>
+                        </div>
+                        <div class="spec-item">
+                            <div class="spec-label">Consommation</div>
+                            <div class="spec-value">${consumption} L/100km</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('carPrice').innerHTML = `${price.toLocaleString('de-CH')} <span class="result-unit">CHF</span>`;
+        }
+        
+        function calculateResults() {
+            if (!selectedVehicle) {
+                document.getElementById('monthlySavings').innerHTML = '-- <span class="result-unit">CHF</span>';
+                document.getElementById('timeToAcquire').innerHTML = '-- <span class="result-unit">mois</span>';
+                document.getElementById('totalSaved').innerHTML = '-- <span class="result-unit">CHF</span>';
+                return;
+            }
+            
+            const brand = document.getElementById('brand').value;
+            const model = document.getElementById('model').value;
+            
+            if (!brand || !model) {
+                document.getElementById('monthlySavings').innerHTML = '-- <span class="result-unit">CHF</span>';
+                document.getElementById('timeToAcquire').innerHTML = '-- <span class="result-unit">mois</span>';
+                document.getElementById('totalSaved').innerHTML = '-- <span class="result-unit">CHF</span>';
+                return;
+            }
+            
+            displayVehicleInfo();
+            
+            // Prendre automatiquement le prix 2026
+            const carPrice = selectedVehicle[2026];
+            
+            if (!carPrice) {
+                console.error('Prix 2026 non trouvé pour:', brand, model);
+                document.getElementById('carPrice').innerHTML = 'Erreur <span class="result-unit">CHF</span>';
+                return;
+            }
+            
+            const monthlyIncome = parseFloat(document.getElementById('monthlyIncome').value);
+            const savingsRate = parseFloat(document.getElementById('savingsRate').value) / 100;
+            const initialSavings = parseFloat(document.getElementById('initialSavings').value);
+            const interestRate = parseFloat(document.getElementById('interestRate').value) / 100 / 12;
+            const annualKm = parseFloat(document.getElementById('annualKm').value);
+            
+            const monthlySavingsAmount = monthlyIncome * savingsRate;
+            const insurancePrices = getInsurancePrices();
+            const insuranceCost = insurancePrices[selectedInsurance];
+            
+            // Coûts annuels
+            const consumption = selectedVehicle.consumption;
+            const fuelCost = Math.round((annualKm / 100) * consumption * 2);
+            
+            let maintenanceCost = 1000;
+            if (selectedVehicle.type === 'sport') maintenanceCost = 3000;
+            else if (selectedVehicle.type === 'sedan') maintenanceCost = 1500;
+            else if (selectedVehicle.type === 'compact') maintenanceCost = 800;
+            else if (selectedVehicle.type === 'cruiser' || selectedVehicle.type === 'standard') maintenanceCost = 600;
+            
+            const tiresCost = currentVehicleType === 'car' 
+                ? Math.round(annualKm / 12000 * 600)
+                : Math.round(annualKm / 8000 * 200);
+            
+            const storageCost = currentVehicleType === 'car' ? 1200 : 400;
+            
+            const totalAnnualCost = insuranceCost + fuelCost + maintenanceCost + tiresCost + storageCost;
+            const monthlyCost = Math.round(totalAnnualCost / 12);
+            
+            // Calculate months needed
+            let totalSaved = initialSavings;
+            let months = 0;
+            const savingsHistory = [totalSaved];
+            
+            while (totalSaved < carPrice && months < 600) {
+                totalSaved += monthlySavingsAmount;
+                totalSaved += totalSaved * interestRate;
+                months++;
+                savingsHistory.push(Math.round(totalSaved));
+            }
+            
+            // Format results
+            document.getElementById('monthlySavings').innerHTML = 
+                monthlySavingsAmount.toLocaleString('de-CH', {maximumFractionDigits: 0}) + ' <span class="result-unit">CHF</span>';
+            
+            const years = Math.floor(months / 12);
+            const remainingMonths = months % 12;
+            const timeText = years > 0 
+                ? `${months} <span class="result-unit">mois (${years} ans ${remainingMonths} mois)</span>`
+                : `${months} <span class="result-unit">mois</span>`;
+            
+            document.getElementById('timeToAcquire').innerHTML = timeText;
+            document.getElementById('totalSaved').innerHTML = 
+                Math.round(totalSaved).toLocaleString('de-CH', {maximumFractionDigits: 0}) + 
+                ' <span class="result-unit">CHF</span>';
+            
+            // Update insurance prices display
+            document.getElementById('civilPrice').textContent = insurancePrices.civil.toLocaleString('de-CH') + ' CHF';
+            document.getElementById('semiPrice').textContent = insurancePrices.semi.toLocaleString('de-CH') + ' CHF';
+            document.getElementById('completePrice').textContent = insurancePrices.complete.toLocaleString('de-CH') + ' CHF';
+            
+            // Update costs display
+            document.getElementById('insuranceCost').textContent = insuranceCost.toLocaleString('de-CH');
+            document.getElementById('fuelCost').textContent = fuelCost.toLocaleString('de-CH');
+            document.getElementById('maintenanceCost').textContent = maintenanceCost.toLocaleString('de-CH');
+            document.getElementById('tiresCost').textContent = tiresCost.toLocaleString('de-CH');
+            document.getElementById('storageCost').textContent = storageCost.toLocaleString('de-CH');
+            document.getElementById('totalAnnualCost').textContent = totalAnnualCost.toLocaleString('de-CH') + ' CHF';
+            document.getElementById('monthlyCost').textContent = monthlyCost.toLocaleString('de-CH') + ' CHF / mois';
+            
+            // Update charts
+            updateCharts(monthlySavingsAmount, savingsHistory, initialSavings, totalAnnualCost, carPrice);
+        }
+        
+        function updateCharts(monthlySavings, savingsHistory, initialSavings, totalAnnualCost, carPrice) {
+            // Time chart - income impact
+            const incomes = [5000, 7500, 10000, 12500, 15000, 20000, 25000, 30000, 40000, 50000];
+            const times = incomes.map(income => {
+                const savings = income * 0.30;
+                let total = initialSavings;
+                let months = 0;
+                while (total < carPrice && months < 600) {
+                    total += savings;
+                    total += total * 0.0125 / 12;
+                    months++;
+                }
+                return months;
+            });
+            
+            const timeCtx = document.getElementById('timeChart').getContext('2d');
+            if (timeChart) timeChart.destroy();
+            timeChart = new Chart(timeCtx, {
+                type: 'bar',
+                data: {
+                    labels: incomes.map(i => (i/1000).toFixed(1) + 'k'),
+                    datasets: [{
+                        label: 'Mois nécessaires',
+                        data: times,
+                        backgroundColor: 'rgba(26, 35, 126, 0.8)',
+                        borderColor: 'rgba(26, 35, 126, 1)',
+                        borderWidth: 2,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        title: {
+                            display: true,
+                            text: 'Temps d\'acquisition selon le revenu mensuel',
+                            font: { size: 13, weight: 'bold' }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Mois' }
+                        },
+                        x: {
+                            title: { display: true, text: 'Revenu mensuel (CHF)' }
+                        }
+                    }
+                }
+            });
+            
+            // Cost chart
+            const insurancePrices = getInsurancePrices();
+            const insAmount = insurancePrices[selectedInsurance];
+            const fuelAmount = Math.round((parseFloat(document.getElementById('annualKm').value) / 100) * selectedVehicle.consumption * 2);
+            
+            let maintenanceAmount = 1000;
+            if (selectedVehicle.type === 'sport') maintenanceAmount = 3000;
+            else if (selectedVehicle.type === 'sedan') maintenanceAmount = 1500;
+            else if (selectedVehicle.type === 'compact') maintenanceAmount = 800;
+            
+            const tiresAmount = currentVehicleType === 'car'
+                ? Math.round(parseFloat(document.getElementById('annualKm').value) / 12000 * 600)
+                : Math.round(parseFloat(document.getElementById('annualKm').value) / 8000 * 200);
+            
+            const storageAmount = currentVehicleType === 'car' ? 1200 : 400;
+            
+            const costs = {
+                'Assurance': insAmount,
+                'Carburant': fuelAmount,
+                'Entretien': maintenanceAmount,
+                'Pneus': tiresAmount,
+                'Parking': storageAmount
+            };
+            
+            const costCtx = document.getElementById('costChart').getContext('2d');
+            if (costChart) costChart.destroy();
+            costChart = new Chart(costCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(costs),
+                    datasets: [{
+                        data: Object.values(costs),
+                        backgroundColor: [
+                            'rgba(26, 35, 126, 0.8)',
+                            'rgba(63, 81, 181, 0.8)',
+                            'rgba(66, 133, 244, 0.8)',
+                            'rgba(51, 103, 214, 0.8)',
+                            'rgba(33, 150, 243, 0.8)'
+                        ],
+                        borderColor: 'white',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { font: { size: 12 } }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Répartition des coûts annuels',
+                            font: { size: 13, weight: 'bold' }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Event listeners
+        document.getElementById('monthlyIncome').addEventListener('input', calculateResults);
+        document.getElementById('savingsRate').addEventListener('input', calculateResults);
+        document.getElementById('initialSavings').addEventListener('input', calculateResults);
+        document.getElementById('interestRate').addEventListener('input', calculateResults);
+        document.getElementById('annualKm').addEventListener('input', calculateResults);
+        
+        // Initialize
+        populateBrands();
+    </script>
+</body>
+</html>
